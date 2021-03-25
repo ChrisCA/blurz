@@ -1,7 +1,8 @@
 use crate::bluetooth_le_advertising_data::BluetoothAdvertisingData;
 use crate::bluetooth_session::BluetoothSession;
 use crate::bluetooth_utils;
-use dbus::{Message, MessageItem};
+use dbus::Message;
+use dbus::arg::messageitem::MessageItem;
 use hex::FromHex;
 use std::collections::HashMap;
 use std::error::Error;
@@ -36,9 +37,9 @@ pub struct BluetoothDevice<'a> {
 }
 
 impl<'a> BluetoothDevice<'a> {
-    pub fn new(session: &'a BluetoothSession, object_path: String) -> BluetoothDevice {
+    pub fn new(session: &'a BluetoothSession, object_path: &str) -> BluetoothDevice<'a> {
         BluetoothDevice {
-            object_path,
+            object_path: object_path.to_string(),
             session,
         }
     }
@@ -53,7 +54,7 @@ impl<'a> BluetoothDevice<'a> {
         if addata.is_empty() {
             return Err(Box::from("No addata found."))
         }
-        Ok(BluetoothAdvertisingData::new(&self.session, addata[0].clone()))
+        Ok(BluetoothAdvertisingData::new(&self.session, &addata[0]))
     }
 
     fn get_property(&self, prop: &str) -> Result<MessageItem, Box<dyn Error>> {
@@ -159,15 +160,9 @@ impl<'a> BluetoothDevice<'a> {
     }
 
     pub fn is_ready_to_receive(&self) -> Option<bool> {
-        let is_connected: bool = match self.is_connected() {
-            Ok(value) => value,
-            Err(_) => false,
-        };
-        let is_paired: bool = match self.is_paired() {
-            Ok(value) => value,
-            Err(_) => false,
-        };
-        Some(is_paired & is_connected)
+        let is_connected: bool = self.is_connected().unwrap_or(false);
+        let is_paired: bool = self.is_paired().unwrap_or(false);
+        Some(is_paired && is_connected)
     }
 
     // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n149
@@ -181,7 +176,7 @@ impl<'a> BluetoothDevice<'a> {
         Ok(trusted.inner::<bool>().unwrap())
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n154
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n185
     pub fn is_blocked(&self) -> Result<bool, Box<dyn Error>> {
         let blocked = self.get_property("Blocked")?;
         Ok(blocked.inner::<bool>().unwrap())
@@ -194,7 +189,7 @@ impl<'a> BluetoothDevice<'a> {
     }
 
     // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n161
-    pub fn set_alias(&self, value: String) -> Result<(), Box<dyn Error>> {
+    pub fn set_alias(&self, value: &str) -> Result<(), Box<dyn Error>> {
         self.set_property("Alias", value, 1000)
     }
 
@@ -249,27 +244,26 @@ impl<'a> BluetoothDevice<'a> {
         Ok(device_id)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n194
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n230
     pub fn get_rssi(&self) -> Result<i16, Box<dyn Error>> {
         let rssi = self.get_property("RSSI")?;
         Ok(rssi.inner::<i16>().unwrap())
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n199
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n235
     pub fn get_tx_power(&self) -> Result<i16, Box<dyn Error>> {
         let tx_power = self.get_property("TxPower")?;
         Ok(tx_power.inner::<i16>().unwrap())
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n204
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n240
     pub fn get_manufacturer_data(&self) -> Result<HashMap<u16, Vec<u8>>, Box<dyn Error>> {
         let manufacturer_data_array = self.get_property("ManufacturerData")?;
         let mut m = HashMap::new();
         let dict_vec = manufacturer_data_array
-            .inner::<&Vec<MessageItem>>()
+            .inner::<&[(MessageItem, MessageItem)]>()
             .unwrap();
-        for dict in dict_vec {
-            let (key, value) = dict.inner::<(&MessageItem, &MessageItem)>().unwrap();
+        for (key, value) in dict_vec {
             let v = value
                 .inner::<&MessageItem>()
                 .unwrap()
@@ -283,13 +277,12 @@ impl<'a> BluetoothDevice<'a> {
         Ok(m)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n210
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n246
     pub fn get_service_data(&self) -> Result<HashMap<String, Vec<u8>>, Box<dyn Error>> {
         let service_data_array = self.get_property("ServiceData")?;
         let mut m = HashMap::new();
-        let dict_vec = service_data_array.inner::<&Vec<MessageItem>>().unwrap();
-        for dict in dict_vec {
-            let (key, value) = dict.inner::<(&MessageItem, &MessageItem)>().unwrap();
+        let dict_vec = service_data_array.inner::<&[(MessageItem, MessageItem)]>().unwrap();
+        for (key, value) in dict_vec {
             let v = value
                 .inner::<&MessageItem>()
                 .unwrap()
@@ -303,7 +296,12 @@ impl<'a> BluetoothDevice<'a> {
         Ok(m)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n215
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n251
+    pub fn is_services_resolved(&self) -> Result<bool, Box<dyn Error>> {
+        let services_resolved = self.get_property("ServicesResolved")?;
+        Ok(services_resolved.inner::<bool>().unwrap())
+    }
+
     pub fn get_gatt_services(&self) -> Result<Vec<String>, Box<dyn Error>> {
         bluetooth_utils::list_services(self.session.get_connection(), &self.object_path)
     }
@@ -317,27 +315,27 @@ impl<'a> BluetoothDevice<'a> {
         self.call_method("Connect", None, timeout_ms)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n29
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n43
     pub fn disconnect(&self) -> Result<Message, Box<dyn Error>> {
         self.call_method("Disconnect", None, 5000)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n43
-    pub fn connect_profile(&self, uuid: String) -> Result<Message, Box<dyn Error>> {
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n61
+    pub fn connect_profile(&self, uuid: &str) -> Result<Message, Box<dyn Error>> {
         self.call_method("ConnectProfile", Some(&[uuid.into()]), 30000)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n55
-    pub fn disconnect_profile(&self, uuid: String) -> Result<Message, Box<dyn Error>> {
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n73
+    pub fn disconnect_profile(&self, uuid: &str) -> Result<Message, Box<dyn Error>> {
         self.call_method("DisconnectProfile", Some(&[uuid.into()]), 5000)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n70
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n88
     pub fn pair(&self, timeout_ms: i32) -> Result<Message, Box<dyn Error>> {
         self.call_method("Pair", None, timeout_ms)
     }
 
-    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n97
+    // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/device-api.txt#n115
     pub fn cancel_pairing(&self) -> Result<Message, Box<dyn Error>> {
         self.call_method("CancelPairing", None, 5000)
     }

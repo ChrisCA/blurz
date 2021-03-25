@@ -1,10 +1,10 @@
 use crate::bluetooth_utils;
 use crate::bluetooth_session::BluetoothSession;
-use dbus::MessageItem;
+use dbus::arg::messageitem::MessageItem;
 use std::collections::HashMap;
 use std::error::Error;
 
-static LEADVERTISING_DATA_INTERFACE: &'static str = "org.bluez.LEAdvertisement1";
+static LEADVERTISING_DATA_INTERFACE: &str = "org.bluez.LEAdvertisement1";
 
 #[derive(Clone, Debug)]
 pub struct BluetoothAdvertisingData<'a> {
@@ -13,10 +13,9 @@ pub struct BluetoothAdvertisingData<'a> {
 }
 
 impl<'a> BluetoothAdvertisingData<'a> {
-	pub fn new(session: &'a BluetoothSession, object_path: String)
-           -> Self {
+	pub fn new(session: &'a BluetoothSession, object_path: &str) -> Self {
         BluetoothAdvertisingData {
-            object_path,
+            object_path: object_path.to_string(),
             session,
         }
     }

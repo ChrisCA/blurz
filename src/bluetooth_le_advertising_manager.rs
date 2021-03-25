@@ -1,8 +1,10 @@
 use crate::bluetooth_utils;
 use std::error::Error;
-use dbus::{Connection, BusType, Message, MessageItem};
+use dbus::Message;
+use dbus::ffidisp::{Connection, BusType};
+use dbus::arg::messageitem::MessageItem;
 
-static LEADVERTISING_MANAGER_INTERFACE: &'static str = "org.bluez.LEAdvertisingManager1";
+static LEADVERTISING_MANAGER_INTERFACE: &str = "org.bluez.LEAdvertisingManager1";
 
 #[derive(Debug)]
 pub struct BluetoothAdvertisingManager {
@@ -19,14 +21,14 @@ impl BluetoothAdvertisingManager {
 
         let c = Connection::get_private(BusType::System)?;
         println!("{:?}", c);
-        Ok(BluetoothAdvertisingManager::new(managers[0].clone(), c))
+        Ok(BluetoothAdvertisingManager::new(&managers[0], c))
     }
 
-	pub fn new(object_path: String, connection: Connection)
+	pub fn new(object_path: &str, connection: Connection)
            -> BluetoothAdvertisingManager {
         BluetoothAdvertisingManager {
-            object_path: object_path,
-            connection: connection,
+            object_path: object_path.to_string(),
+            connection,
         }
     }
 
