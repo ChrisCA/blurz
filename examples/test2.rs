@@ -1,7 +1,7 @@
 extern crate blurz;
 
-static BATTERY_SERVICE_UUID: &'static str = "0000180f-0000-1000-8000-00805f9b34fb";
-static COLOR_PICKER_SERVICE_UUID: &'static str = "00001812-0000-1000-8000-00805f9b34fb";
+static BATTERY_SERVICE_UUID: &str = "0000180f-0000-1000-8000-00805f9b34fb";
+static COLOR_PICKER_SERVICE_UUID: &str = "00001812-0000-1000-8000-00805f9b34fb";
 
 use std::error::Error;
 use std::thread;
@@ -18,10 +18,7 @@ use blurz::bluetooth_session::BluetoothSession as Session;
 fn test2() -> Result<(), Box<dyn Error>> {
     let bt_session = &Session::create_session(None)?;
     let adapter: Adapter = Adapter::init(bt_session)?;
-    let session = DiscoverySession::create_session(
-        &bt_session,
-        adapter.get_id()
-    )?;
+    let session = DiscoverySession::create_session(&bt_session, &adapter.get_id())?;
     session.start_discovery()?;
     //let mut devices = vec!();
     for _ in 0..5 {
@@ -62,7 +59,7 @@ fn test2() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
-        println!("");
+        println!();
     }
     adapter.stop_discovery().ok();
     if !device.is_connected()? {
@@ -70,16 +67,16 @@ fn test2() -> Result<(), Box<dyn Error>> {
     }
     let services = device.get_gatt_services()?;
     for service in services {
-        let s = Service::new(bt_session, service.clone());
+        let s = Service::new(bt_session, &service);
         println!("{:?}", s);
         let characteristics = s.get_gatt_characteristics()?;
         for characteristic in characteristics {
-            let c = Characteristic::new(bt_session, characteristic.clone());
+            let c = Characteristic::new(bt_session, &characteristic);
             println!("{:?}", c);
             println!("Value: {:?}", c.read_value(None));
             let descriptors = c.get_gatt_descriptors()?;
             for descriptor in descriptors {
-                let d = Descriptor::new(bt_session, descriptor.clone());
+                let d = Descriptor::new(bt_session, &descriptor);
                 println!("{:?}", d);
                 println!("Value: {:?}", d.read_value(None));
             }

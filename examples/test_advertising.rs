@@ -1,10 +1,10 @@
 extern crate blurz;
 extern crate dbus;
 
-use std::error::Error;
-use std::time::Duration;
-use std::thread;
 use dbus::arg::messageitem::MessageItem;
+use std::error::Error;
+use std::thread;
+use std::time::Duration;
 
 use blurz::bluetooth_adapter::BluetoothAdapter;
 use blurz::bluetooth_device::BluetoothDevice;
@@ -12,22 +12,19 @@ use blurz::bluetooth_device::BluetoothDevice;
 //use blurz::bluetooth_gatt_characteristic::BluetoothGATTCharacteristic;
 //use blurz::bluetooth_gatt_descriptor::BluetoothGATTDescriptor;
 use blurz::bluetooth_discovery_session::BluetoothDiscoverySession;
-use blurz::bluetooth_session::BluetoothSession;
 use blurz::bluetooth_le_advertising_data::BluetoothAdvertisingData;
 use blurz::bluetooth_le_advertising_manager::BluetoothAdvertisingManager;
+use blurz::bluetooth_session::BluetoothSession;
 
 //static LEADVERTISING_MANAGER_INTERFACE: &'static str = "org.bluez.LEAdvertisingManager1";
-static LEADVERTISING_DATA_INTERFACE: &'static str = "org.bluez.LEAdvertisement1";
-static BATTERY_SERVICE_UUID: &'static str = "0000180f-0000-1000-8000-00805f9b34fb";
-static COLOR_PICKER_SERVICE_UUID: &'static str = "00001812-0000-1000-8000-00805f9b34fb";
+static LEADVERTISING_DATA_INTERFACE: &str = "org.bluez.LEAdvertisement1";
+static BATTERY_SERVICE_UUID: &str = "0000180f-0000-1000-8000-00805f9b34fb";
+static COLOR_PICKER_SERVICE_UUID: &str = "00001812-0000-1000-8000-00805f9b34fb";
 
 fn main() -> Result<(), Box<dyn Error>> {
     let bt_session = BluetoothSession::create_session(None)?;
-    let adapter= BluetoothAdapter::init(&bt_session)?;
-    let session = BluetoothDiscoverySession::create_session(
-        &bt_session,
-        adapter.get_id()
-    )?;
+    let adapter = BluetoothAdapter::init(&bt_session)?;
+    let session = BluetoothDiscoverySession::create_session(&bt_session, &adapter.get_id())?;
     session.start_discovery()?;
     for _ in 0..5 {
         let devices = adapter.get_device_list()?;
@@ -48,8 +45,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         println!("{} {:?}", device.get_id(), device.get_alias());
         let uuids = device.get_uuids()?;
         println!("{:?}", uuids);
-        '_uuid_loop:
-        for uuid in uuids {
+        '_uuid_loop: for uuid in uuids {
             if (uuid == COLOR_PICKER_SERVICE_UUID) || (uuid == BATTERY_SERVICE_UUID) {
                 println!("{:?} has a service!", device.get_alias());
                 println!("connect device...");
@@ -68,7 +64,7 @@ fn main() -> Result<(), Box<dyn Error>> {
                 }
             }
         }
-        println!("");
+        println!();
     }
     adapter.stop_discovery().ok();
     if !device.is_connected()? {
@@ -76,10 +72,13 @@ fn main() -> Result<(), Box<dyn Error>> {
     }
 
     let addata = BluetoothAdvertisingData::new(&bt_session, LEADVERTISING_DATA_INTERFACE);
-    
+
     let manager = BluetoothAdvertisingManager::create_adv_manager()?;
     println!("{:?} : {:?}", manager, manager.get_conn());
-    manager.register_advertisement([addata.get_object_path().into(), MessageItem::new_dict(vec![(0u8.into(), 0u8.into())]).unwrap()])?;
+    manager.register_advertisement([
+        addata.get_object_path().into(),
+        MessageItem::new_dict(vec![(0u8.into(), 0u8.into())]).unwrap(),
+    ])?;
 
     Ok(())
 }
