@@ -2,8 +2,8 @@ use crate::bluetooth_device::BluetoothDevice;
 use crate::bluetooth_le_advertising_data::BluetoothAdvertisingData;
 use crate::bluetooth_session::BluetoothSession;
 use crate::bluetooth_utils;
-use dbus::Message;
 use dbus::arg::messageitem::MessageItem;
+use dbus::Message;
 use hex::FromHex;
 use std::error::Error;
 
@@ -52,10 +52,8 @@ impl<'a> BluetoothAdapter<'a> {
     }
 
     pub fn get_first_device(&self) -> Result<BluetoothDevice, Box<dyn Error>> {
-        let devices =bluetooth_utils::list_devices(
-            self.session.get_connection(),
-            &self.object_path
-        )?;
+        let devices =
+            bluetooth_utils::list_devices(self.session.get_connection(), &self.object_path)?;
 
         if devices.is_empty() {
             return Err(Box::from("No device found."));
@@ -64,10 +62,11 @@ impl<'a> BluetoothAdapter<'a> {
     }
 
     pub fn get_addata(&self) -> Result<BluetoothAdvertisingData, Box<dyn Error>> {
-        let addata = bluetooth_utils::list_addata_1(self.session.get_connection(), &self.object_path)?;
+        let addata =
+            bluetooth_utils::list_addata_1(self.session.get_connection(), &self.object_path)?;
 
         if addata.is_empty() {
-            return Err(Box::from("No addata found."))
+            return Err(Box::from("No addata found."));
         }
         Ok(BluetoothAdvertisingData::new(&self.session, &addata[0]))
     }
@@ -296,15 +295,18 @@ impl<'a> BluetoothAdapter<'a> {
         };
 
         let m = MessageItem::new_dict(vec![
-            ("Address".into(), MessageItem::Variant(Box::new(address.into()))),
-            ("AddressType".into(), MessageItem::Variant(Box::new(address_type.into()))),
-        ]).unwrap();
+            (
+                "Address".into(),
+                MessageItem::Variant(Box::new(address.into())),
+            ),
+            (
+                "AddressType".into(),
+                MessageItem::Variant(Box::new(address_type.into())),
+            ),
+        ])
+        .unwrap();
 
-        self.call_method(
-            "ConnectDevice",
-            Some(&[m]),
-            timeout_ms,
-        )
+        self.call_method("ConnectDevice", Some(&[m]), timeout_ms)
     }
 }
 

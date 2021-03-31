@@ -1,11 +1,11 @@
+use crate::bluetooth_event::BluetoothEvent;
 use crate::bluetooth_session::BluetoothSession;
 use crate::bluetooth_utils;
-use crate::bluetooth_event::BluetoothEvent;
-use dbus::{Message, Signature};
-use dbus::arg::Variant;
-use dbus::arg::OwnedFd;
 use dbus::arg::messageitem::{MessageItem, MessageItemArray, MessageItemDict};
-use dbus::ffidisp::{Connection, BusType};
+use dbus::arg::OwnedFd;
+use dbus::arg::Variant;
+use dbus::ffidisp::{BusType, Connection};
+use dbus::{Message, Signature};
 
 use std::error::Error;
 
@@ -42,7 +42,10 @@ enum Flags {
 */
 
 impl<'a> BluetoothGATTCharacteristic<'a> {
-    pub fn new(session: &'a BluetoothSession, object_path: &str) -> BluetoothGATTCharacteristic<'a> {
+    pub fn new(
+        session: &'a BluetoothSession,
+        object_path: &str,
+    ) -> BluetoothGATTCharacteristic<'a> {
         BluetoothGATTCharacteristic {
             object_path: object_path.to_string(),
             session,
@@ -138,20 +141,18 @@ impl<'a> BluetoothGATTCharacteristic<'a> {
             SERVICE_NAME,
             &self.object_path,
             GATT_CHARACTERISTIC_INTERFACE,
-            "ReadValue"
+            "ReadValue",
         )?;
         m.append_items(&[MessageItem::Dict(
             MessageItemDict::new(
                 match offset {
-                    Some(o) => vec![(
-                        "offset".into(),
-                        MessageItem::Variant(Box::new(o.into())),
-                    )],
+                    Some(o) => vec![("offset".into(), MessageItem::Variant(Box::new(o.into())))],
                     None => vec![],
                 },
                 Signature::make::<String>(),
                 Signature::make::<Variant<u8>>(),
-            ).unwrap(),
+            )
+            .unwrap(),
         )]);
         let reply = c.send_with_reply_and_block(m, 1000)?;
         let items: MessageItem = reply.get1().unwrap();
@@ -164,7 +165,11 @@ impl<'a> BluetoothGATTCharacteristic<'a> {
     }
 
     // http://git.kernel.org/cgit/bluetooth/bluez.git/tree/doc/gatt-api.txt#n84
-    pub fn write_value<I: Into<&'a[u8]>>(&self, values: I, offset: Option<u16>) -> Result<Option<BluetoothEvent>, Box<dyn Error>> {
+    pub fn write_value<I: Into<&'a [u8]>>(
+        &self,
+        values: I,
+        offset: Option<u16>,
+    ) -> Result<Option<BluetoothEvent>, Box<dyn Error>> {
         let values_msgs = values
             .into()
             .iter()
@@ -178,15 +183,15 @@ impl<'a> BluetoothGATTCharacteristic<'a> {
                 MessageItem::Dict(
                     MessageItemDict::new(
                         match offset {
-                            Some(o) => vec![(
-                                "offset".into(),
-                                MessageItem::Variant(Box::new(o.into())),
-                            )],
+                            Some(o) => {
+                                vec![("offset".into(), MessageItem::Variant(Box::new(o.into())))]
+                            }
                             None => vec![],
                         },
                         Signature::make::<String>(),
                         Signature::make::<Variant<u8>>(),
-                    ).unwrap(),
+                    )
+                    .unwrap(),
                 ),
             ]),
             10000,

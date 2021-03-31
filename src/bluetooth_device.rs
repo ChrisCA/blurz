@@ -1,8 +1,8 @@
 use crate::bluetooth_le_advertising_data::BluetoothAdvertisingData;
 use crate::bluetooth_session::BluetoothSession;
 use crate::bluetooth_utils;
-use dbus::Message;
 use dbus::arg::messageitem::MessageItem;
+use dbus::Message;
 use hex::FromHex;
 use std::collections::HashMap;
 use std::error::Error;
@@ -49,10 +49,11 @@ impl<'a> BluetoothDevice<'a> {
     }
 
     pub fn get_addata(&self) -> Result<BluetoothAdvertisingData, Box<dyn Error>> {
-        let addata = bluetooth_utils::list_addata_2(self.session.get_connection(), &self.object_path)?;
+        let addata =
+            bluetooth_utils::list_addata_2(self.session.get_connection(), &self.object_path)?;
 
         if addata.is_empty() {
-            return Err(Box::from("No addata found."))
+            return Err(Box::from("No addata found."));
         }
         Ok(BluetoothAdvertisingData::new(&self.session, &addata[0]))
     }
@@ -281,7 +282,9 @@ impl<'a> BluetoothDevice<'a> {
     pub fn get_service_data(&self) -> Result<HashMap<String, Vec<u8>>, Box<dyn Error>> {
         let service_data_array = self.get_property("ServiceData")?;
         let mut m = HashMap::new();
-        let dict_vec = service_data_array.inner::<&[(MessageItem, MessageItem)]>().unwrap();
+        let dict_vec = service_data_array
+            .inner::<&[(MessageItem, MessageItem)]>()
+            .unwrap();
         for (key, value) in dict_vec {
             let v = value
                 .inner::<&MessageItem>()

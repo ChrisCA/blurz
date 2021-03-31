@@ -1,6 +1,6 @@
 use crate::bluetooth_session::BluetoothSession;
-use dbus::Message;
 use dbus::arg::messageitem::MessageItem;
+use dbus::Message;
 use std::error::Error;
 
 static ADAPTER_INTERFACE: &str = "org.bluez.Adapter1";
@@ -26,13 +26,13 @@ impl<'a> BluetoothDiscoverySession<'a> {
         }
     }
 
-    fn call_method(&self, method: &str, param: Option<[MessageItem; 1]>) -> Result<(), Box<dyn Error>> {
-        let mut m = Message::new_method_call(
-            SERVICE_NAME,
-            &self.adapter,
-            ADAPTER_INTERFACE,
-            method
-        )?;
+    fn call_method(
+        &self,
+        method: &str,
+        param: Option<[MessageItem; 1]>,
+    ) -> Result<(), Box<dyn Error>> {
+        let mut m =
+            Message::new_method_call(SERVICE_NAME, &self.adapter, ADAPTER_INTERFACE, method)?;
         if let Some(p) = param {
             m.append_items(&p);
         }
@@ -66,16 +66,11 @@ impl<'a> BluetoothDiscoverySession<'a> {
 
         let mut m = vec![(
             "UUIDs".into(),
-            MessageItem::Variant(Box::new(
-                MessageItem::new_array(uuids).unwrap(),
-            )),
+            MessageItem::Variant(Box::new(MessageItem::new_array(uuids).unwrap())),
         )];
 
         if let Some(rssi) = rssi {
-            m.push((
-                "RSSI".into(),
-                MessageItem::Variant(Box::new(rssi.into())),
-            ))
+            m.push(("RSSI".into(), MessageItem::Variant(Box::new(rssi.into()))))
         }
 
         if let Some(pathloss) = pathloss {
@@ -91,4 +86,3 @@ impl<'a> BluetoothDiscoverySession<'a> {
         )
     }
 }
-
